@@ -8,6 +8,7 @@ const ChatWindow = () => {
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef(null);
 
+  // --- UNIQUE USER ID LOGIC ---
   const getUserId = () => {
     const storedUser = JSON.parse(localStorage.getItem("user"));
     if (storedUser && (storedUser.id || storedUser._id)) {
@@ -25,14 +26,17 @@ const ChatWindow = () => {
   const userId = getUserId();
   const API_BASE_URL = "https://gemini-chatbot-backend-999m.onrender.com/api/chat";
 
+  // Auto scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
+  // Fetch history specifically for THIS userId
   useEffect(() => {
     const fetchHistory = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/${userId}`);
+        // Backend data format (role/content) to frontend format
         const formatted = res.data.map(m => ({
           role: m.role,
           content: m.content
@@ -48,6 +52,7 @@ const ChatWindow = () => {
   const handleSend = async (text) => {
     if (!text.trim()) return;
 
+    // Local update for UI
     setMessages((prev) => [...prev, { role: "user", content: text }]);
     setIsTyping(true);
 
@@ -91,7 +96,7 @@ const ChatWindow = () => {
           {messages.length === 0 && !isTyping && (
             <div className="flex flex-col items-center justify-center mt-32 space-y-4 opacity-40">
                <div className="text-6xl animate-pulse">✨</div>
-               <p className="text-xl font-light italic">How can I help you today ?</p>
+               <p className="text-xl font-light italic">How can I help you today?</p>
             </div>
           )}
 
@@ -114,6 +119,7 @@ const ChatWindow = () => {
         </div>
       </div>
 
+      {/* Input Area */}
       <div className="bg-[#131314] p-4 pb-8">
         <div className="max-w-3xl mx-auto relative">
           <div className="bg-[#1e1f20] rounded-3xl border border-gray-700 focus-within:border-blue-500/50 transition-all shadow-2xl">
