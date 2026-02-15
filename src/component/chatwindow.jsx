@@ -39,7 +39,7 @@ const ChatWindow = () => {
       if (!userId) return;
       try {
         const res = await axios.get(
-          `http://localhost:5000/api/chat/${userId}`
+          `https://gemini-chatbot-backend-999m.onrender.com/api/chat/${userId}`
         );
         // Ensure data is mapped correctly if backend uses role/content
         setMessages(res.data);
