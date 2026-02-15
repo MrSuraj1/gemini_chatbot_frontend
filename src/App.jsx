@@ -1,45 +1,39 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ChatWindow from "./component/chatwindow";
-import AuthForm from "./component/LoginSignup"; 
+import AuthForm from "./component/LoginSignup";
 import './App.css';
 
 function App() {
-  const [token, setToken] = useState(localStorage.getItem("token"));
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  // Ye effect nazar rakhega ki token kab change ho raha hai
   useEffect(() => {
-    const handleStorageChange = () => {
-      setToken(localStorage.getItem("token"));
-    };
-
-    // Listen for storage changes
-    window.addEventListener("storage", handleStorageChange);
-    return () => window.removeEventListener("storage", handleStorageChange);
+    const token = localStorage.getItem("token");
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (token && storedUser) {
+      setUser(storedUser);
+    }
+    setLoading(false);
   }, []);
 
-  // Login hone par ye function call karna
-  const handleLoginSuccess = (newToken) => {
-    localStorage.setItem("token", newToken);
-    setToken(newToken);
-  };
+  if (loading) return <div className="h-screen bg-[#131314]" />; // Loading Screen
 
   return (
     <Routes>
-      {/* Agar token hai to ChatWindow, varna Login par bhej do */}
       <Route 
         path="/" 
-        element={token ? <ChatWindow /> : <Navigate to="/login" replace />} 
+        element={user ? <ChatWindow /> : <Navigate to="/login" replace />} 
       />
-
-      {/* Agar login page par hai aur token mil gaya, to turant "/" par bhej do */}
       <Route 
         path="/login" 
-        element={!token ? <AuthForm onLoginSuccess={handleLoginSuccess} /> : <Navigate to="/" replace />} 
+        element={!user ? <AuthForm mode="login" onLoginSuccess={(token, u) => setUser(u)} /> : <Navigate to="/" replace />} 
       />
-
-      {/* Backup redirect */}
-      <Route path="*" element={<Navigate to={token ? "/" : "/login"} replace />} />
+      <Route 
+        path="/signup" 
+        element={!user ? <AuthForm mode="signup" onLoginSuccess={(token, u) => setUser(u)} /> : <Navigate to="/" replace />} 
+      />
+      <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );
 }

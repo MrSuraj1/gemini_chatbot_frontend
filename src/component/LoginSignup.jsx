@@ -15,7 +15,7 @@ const AuthForm = ({ mode = "signup", onLoginSuccess }) => {
 
     try {
       // Backend URL (Make sure it matches your server port)
-      const url = `http://localhost:5000/api/auth/${currentMode}`;
+      const url = `https://gemini-chatbot-backend-999m.onrender.com/api/auth/${currentMode}`;
       const res = await axios.post(url, { email, password });
 
       // 1. LocalStorage mein data save karo
