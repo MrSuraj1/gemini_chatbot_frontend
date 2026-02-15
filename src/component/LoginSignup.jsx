@@ -14,15 +14,13 @@ const AuthForm = ({ mode = "signup", onLoginSuccess }) => {
     setError("");
 
     try {
-      // Backend URL (Make sure it matches your server port)
       const url = `https://gemini-chatbot-backend-999m.onrender.com/api/auth/${currentMode}`;
       const res = await axios.post(url, { email, password });
 
-      // 1. LocalStorage mein data save karo
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
 
-      // 2. App.js ki state update karo (Ye turant "/" par redirect kar dega)
+    
       if (onLoginSuccess) {
         onLoginSuccess(res.data.token, res.data.user);
       }
@@ -38,10 +36,10 @@ const AuthForm = ({ mode = "signup", onLoginSuccess }) => {
     <div className="flex items-center justify-center min-h-screen bg-[#f0f4f9] dark:bg-[#131314] px-4 transition-colors">
       <div className="w-full max-w-md p-8 space-y-6 bg-white dark:bg-[#1e1f20] rounded-2xl shadow-xl border border-gray-100 dark:border-gray-800">
         
-        {/* Gemini Style Branding in Login */}
-        <div className="text-center space-y-2">
+        {/* Logo - suraj Bhai ka  */}
+                <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-500 via-purple-500 to-red-400 bg-clip-text text-transparent inline-block">
-            Gemini
+            Suraj-ChaTbox 
           </h1>
           <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-100">
             {currentMode === "signup" ? "Create your account" : "Welcome back"}

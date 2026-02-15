@@ -17,7 +17,7 @@ function App() {
     setLoading(false);
   }, []);
 
-  if (loading) return <div className="h-screen bg-[#131314]" />; // Loading Screen
+  if (loading) return <div className="h-screen bg-[#131314]" />; 
 
   return (
     <Routes>
