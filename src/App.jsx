@@ -1,47 +1,45 @@
-import React, { useState, useEffect } from "react";
 import { Routes, Route, Navigate } from "react-router-dom";
-import AuthForm from "./component/LoginSignup";
+import { useState, useEffect } from "react";
 import ChatWindow from "./component/chatwindow";
+import AuthForm from "./component/LoginSignup"; 
+import './App.css';
 
 function App() {
-  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem("token"));
 
+  // Ye effect nazar rakhega ki token kab change ho raha hai
   useEffect(() => {
-    const token = localStorage.getItem("token");
-    const userData = JSON.parse(localStorage.getItem("user"));
-    if (token && userData) setUser(userData);
+    const handleStorageChange = () => {
+      setToken(localStorage.getItem("token"));
+    };
+
+    // Listen for storage changes
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
   }, []);
+
+  // Login hone par ye function call karna
+  const handleLoginSuccess = (newToken) => {
+    localStorage.setItem("token", newToken);
+    setToken(newToken);
+  };
 
   return (
     <Routes>
-      <Route
-        path="/"
-        element={user ? <ChatWindow /> : <Navigate to="/login" replace />}
+      {/* Agar token hai to ChatWindow, varna Login par bhej do */}
+      <Route 
+        path="/" 
+        element={token ? <ChatWindow /> : <Navigate to="/login" replace />} 
       />
-      <Route
-        path="/login"
-        element={
-          <AuthForm
-            mode="login"
-            onLogin={(u) => {
-              setUser(u);
-              localStorage.setItem("user", JSON.stringify(u));
-            }}
-          />
-        }
+
+      {/* Agar login page par hai aur token mil gaya, to turant "/" par bhej do */}
+      <Route 
+        path="/login" 
+        element={!token ? <AuthForm onLoginSuccess={handleLoginSuccess} /> : <Navigate to="/" replace />} 
       />
-      <Route
-        path="/signup"
-        element={
-          <AuthForm
-            mode="signup"
-            onLogin={(u) => {
-              setUser(u);
-              localStorage.setItem("user", JSON.stringify(u));
-            }}
-          />
-        }
-      />
+
+      {/* Backup redirect */}
+      <Route path="*" element={<Navigate to={token ? "/" : "/login"} replace />} />
     </Routes>
   );
 }

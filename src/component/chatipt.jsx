@@ -1,36 +1,32 @@
-// src/components/ChatInput.jsx
 import React, { useState } from "react";
 
-const ChatInput = ({ onSend }) => {
+const ChatInput = ({ onSend, disabled }) => {
   const [text, setText] = useState("");
 
-  const handleSend = () => {
-    if (!text.trim()) return;
+  const handleSubmit = (e) => {
+    e.preventDefault();
     onSend(text);
     setText("");
   };
 
-  const handleEnter = (e) => {
-    if (e.key === "Enter") handleSend();
-  };
-
   return (
-    <div className="flex p-2 border-t">
+    <form className="flex gap-2" onSubmit={handleSubmit}>
       <input
         type="text"
+        className="flex-grow px-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 dark:bg-[#131314] dark:text-gray-100"
+        placeholder="Type your message..."
         value={text}
         onChange={(e) => setText(e.target.value)}
-        onKeyDown={handleEnter}
-        placeholder="Type a message..."
-        className="flex-grow p-2 border rounded-l-lg outline-none"
+        disabled={disabled}
       />
       <button
-        onClick={handleSend}
-        className="bg-blue-500 text-white px-4 rounded-r-lg hover:bg-blue-600"
+        type="submit"
+        className="px-4 py-2 bg-blue-600 text-white rounded-lg disabled:opacity-50"
+        disabled={disabled}
       >
         Send
       </button>
-    </div>
+    </form>
   );
 };
 

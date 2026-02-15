@@ -1,110 +1,131 @@
 import React, { useEffect, useState, useRef } from "react";
+import axios from "axios";
 import ChatInput from "./chatipt";
 import ChatMessage from "./chatmsg";
-import axios from "axios";
-import { useNavigate } from "react-router-dom";
 
 const ChatWindow = () => {
-  const navigate = useNavigate();
   const [messages, setMessages] = useState([]);
   const [isTyping, setIsTyping] = useState(false);
-  const [darkMode, setDarkMode] = useState(false);
   const messagesEndRef = useRef(null);
 
-  // Fetch token and chat history
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    const user = JSON.parse(localStorage.getItem("user"));
-
-    if (!token) {
-      // Show blank 5 sec then redirect
-      setTimeout(() => navigate("/login"), 5000);
-      return;
+  // --- UNIQUE USER ID LOGIC ---
+  const getUserId = () => {
+    // 1. Pehle dekho login user hai kya?
+    const storedUser = JSON.parse(localStorage.getItem("user"));
+    if (storedUser && (storedUser.id || storedUser._id)) {
+      return storedUser.id || storedUser._id;
     }
 
-    const fetchHistory = async () => {
-      try {
-        const res = await axios.get(`http://localhost:5000/api/chat/${user.id}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setMessages(res.data);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-    fetchHistory();
-  }, [navigate]);
+    // 2. Agar login nahi hai, to browser ka unique ID check karo
+    let browserId = localStorage.getItem("browser_id");
+    if (!browserId) {
+      // Naya unique ID generate karo (Laptop specific)
+      browserId = 'user_' + Math.random().toString(36).substring(2, 15) + Date.now();
+      localStorage.setItem("browser_id", browserId);
+    }
+    return browserId;
+  };
 
+  const userId = getUserId(); 
+
+  // Auto scroll
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, isTyping]);
 
+  // Fetch history specifically for THIS userId
+  useEffect(() => {
+    const fetchHistory = async () => {
+      if (!userId) return;
+      try {
+        const res = await axios.get(
+          `http://localhost:5000/api/chat/${userId}`
+        );
+        // Ensure data is mapped correctly if backend uses role/content
+        setMessages(res.data);
+      } catch (err) {
+        console.error("Fetch history error:", err);
+      }
+    };
+    fetchHistory();
+  }, [userId]); // Jab userId badle (login/logout), tab re-fetch ho
+
   const handleSend = async (text) => {
     if (!text.trim()) return;
-    const token = localStorage.getItem("token");
-    const user = JSON.parse(localStorage.getItem("user"));
 
-    setMessages((prev) => [...prev, { sender: "user", text }]);
+    setMessages((prev) => [...prev, { role: "user", content: text }]);
     setIsTyping(true);
 
     try {
-      const res = await axios.post(
-        "http://localhost:5000/api/chat",
-        { message: text, userId: user.id },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      setMessages((prev) => [...prev, { sender: "ai", text: res.data.reply }]);
-    } catch {
-      setMessages((prev) => [...prev, { sender: "ai", text: "Connection error" }]);
+      const res = await axios.post("http://localhost:5000/api/chat", {
+        message: text,
+        userId: userId, // Bhejo unique ID
+      });
+
+      setMessages((prev) => [
+        ...prev,
+        { role: "ai", content: res.data.reply },
+      ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        { role: "ai", content: "Oops! Connection error." },
+      ]);
     } finally {
       setIsTyping(false);
     }
   };
 
-  const toggleDarkMode = () => setDarkMode(!darkMode);
-
-  if (!localStorage.getItem("token")) {
-    return (
-      <div className="flex items-center justify-center h-screen bg-gray-50 dark:bg-[#131314]">
-        <p className="text-gray-400 dark:text-gray-500 text-lg">Redirecting to login in 5 seconds...</p>
-      </div>
-    );
-  }
-
   return (
-    <div className={`${darkMode ? "dark" : ""} flex flex-col h-screen w-full bg-[#f8fafc] dark:bg-[#131314] transition-colors duration-300`}>
-      {/* Header */}
-      <header className="flex items-center justify-between px-6 py-3 bg-white dark:bg-[#1e1f20] border-b dark:border-gray-700 shadow-sm">
-        <span className="text-2xl font-bold bg-gradient-to-r from-[#4285f4] via-[#9b72cb] to-[#d96570] bg-clip-text text-transparent">Gemini</span>
-        <div className="flex items-center gap-3">
-          <button onClick={toggleDarkMode} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">{darkMode ? "☀️" : "🌙"}</button>
+    <div className="flex flex-col h-screen bg-[#131314] text-white font-sans">
+      
+      {/* Header with User Info */}
+      <header className="px-6 py-4 bg-[#1e1f20] border-b border-gray-700 flex justify-between items-center">
+        <h1 className="text-2xl font-semibold tracking-wide bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+              Suraj AI - bright
+        </h1>
+        <div className="text-[10px] text-gray-500">
+          Session ID: {userId.substring(0, 8)}...
         </div>
       </header>
 
-      {/* Messages */}
-      <div className="flex-grow overflow-y-auto px-4">
-        <div className="max-w-3xl mx-auto py-10 space-y-6">
-          {messages.map((msg, idx) => <ChatMessage key={idx} message={msg} />)}
-          {isTyping && (
-            <div className="flex items-center space-x-2 text-gray-400 animate-pulse">
-              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-              <div className="w-2 h-2 bg-purple-400 rounded-full delay-75"></div>
-              <div className="w-2 h-2 bg-red-400 rounded-full delay-150"></div>
-              <span className="text-xs ml-2 dark:text-gray-500">Gemini is thinking...</span>
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto px-4 py-6 custom-scrollbar">
+        <div className="max-w-3xl mx-auto space-y-6">
+          {messages.length === 0 && !isTyping && (
+            <div className="flex flex-col items-center justify-center mt-20 opacity-50">
+               <div className="text-4xl mb-4">✨</div>
+               <p className="text-xl">How can I help you today?</p>
             </div>
           )}
+
+          {messages.map((msg, idx) => (
+            <ChatMessage key={idx} message={msg} />
+          ))}
+
+          {isTyping && (
+            <div className="flex items-center space-x-2 text-gray-400 animate-pulse bg-[#1e1f20] w-fit px-4 py-2 rounded-full">
+              <span className="text-xs">Suraj is thinking</span>
+              <div className="flex space-x-1">
+                <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce"></div>
+                <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                <div className="w-1 h-1 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]"></div>
+              </div>
+            </div>
+          )}
+
           <div ref={messagesEndRef} />
         </div>
       </div>
 
-      {/* Input */}
-      <div className="p-4">
-        <div className="max-w-3xl mx-auto bg-white dark:bg-[#1e1f20] rounded-full shadow-lg border border-gray-200 dark:border-gray-700">
+      {/* Input Area */}
+      <div className="bg-[#131314] p-4 pb-8">
+        <div className="max-w-3xl mx-auto">
           <ChatInput onSend={handleSend} disabled={isTyping} />
+          <p className="text-[10px] text-center text-gray-600 mt-4">
+            Personalized session for {userId.substring(0, 10)}
+          </p>
         </div>
-        <p className="text-[10px] text-center text-gray-500 dark:text-gray-400 mt-4">
-          Gemini may display inaccurate info, double-check responses.
-        </p>
       </div>
     </div>
   );
